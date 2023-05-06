@@ -68,7 +68,8 @@ const App: React.FC<SseTestProps> = () => {
         };
 
         newEventSource.addEventListener("connect", event => {
-          const msg = `Received connect: ${event.type}`;
+          const messageEvent = event as MessageEvent;
+          const msg = `EventType : ${event.type}, Data: ${messageEvent.data}`;
             //console.log(msg);
             setMessage(msg);
         });
@@ -76,7 +77,7 @@ const App: React.FC<SseTestProps> = () => {
         newEventSource.addEventListener("alarm", event => {
           const messageEvent = event as MessageEvent;
           const receivedAlarm: AlarmOutDTO = JSON.parse(messageEvent.data);
-          const msg = `Received alarm: ${JSON.stringify(receivedAlarm)}`;
+          const msg = `EventType : ${event.type}, Data: ${JSON.stringify(receivedAlarm)}`;
           //console.log(msg);
           setMessage(msg);
         });
