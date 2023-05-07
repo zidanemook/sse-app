@@ -11,6 +11,7 @@ interface AlarmOutDTO {
 const App: React.FC<SseTestProps> = () => {
   const [eventSource, setEventSource] = useState<EventSourcePolyfill | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [alarms, setAlarms] = useState<AlarmOutDTO[]>([]);
 
   const [message, setMessage] = useState<string>('');
@@ -34,13 +35,14 @@ const App: React.FC<SseTestProps> = () => {
             });
 
             if (response.status === 200) {
-                const token = response.headers.get('Authorization');
-                if (token) {
-                    setAccessToken(token);
-                    connect(token);
-                } else {
-                    throw new Error('Token not found in header');
-                }
+              const data = await response.json();
+              const accessToken = data.data.accessToken;
+              const refreshToken = data.data.refreshToken;
+        
+              setAccessToken(accessToken);
+              setRefreshToken(refreshToken);
+        
+              connect(accessToken);
             } else {
                 throw new Error('Login failed');
             }
