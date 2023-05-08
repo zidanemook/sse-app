@@ -35,13 +35,16 @@ const App: React.FC<SseTestProps> = () => {
             });
 
             if (response.status === 200) {
-              const data = await response.json();
-              const accessToken = data.data.accessToken;
-              const refreshToken = data.data.refreshToken;
-        
+              const accessToken = response.headers.get('Authorization');
+              const refreshToken = response.headers.get('RefreshToken');
+
+              if (!accessToken || !refreshToken) {
+                throw new Error('Token not found in headers');
+              }
+
               setAccessToken(accessToken);
               setRefreshToken(refreshToken);
-        
+
               connect(accessToken);
             } else {
                 throw new Error('Login failed');
