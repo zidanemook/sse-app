@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 
 interface SseTestProps {}
-
+<div></div>
 interface AlarmOutDTO {
   id: number;
   content: string;
 }
 
 const App: React.FC<SseTestProps> = () => {
+  
   const [eventSource, setEventSource] = useState<EventSourcePolyfill | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
@@ -17,9 +18,12 @@ const App: React.FC<SseTestProps> = () => {
   const [message, setMessage] = useState<string>('');
   const [email, setEmail] = useState<string>('ssar@nate.com');
   const [password, setPassword] = useState<string>('1234');
+  const [leaveType, setLeaveType] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
     const handleLogin = async () => {
-      const loginEndpoint = 'http://localhost:8080/login';
+      const loginEndpoint = 'http://localhost:10000/login';
       const loginData = {
           email: email,
           password: password
@@ -57,7 +61,7 @@ const App: React.FC<SseTestProps> = () => {
     };
 
     const connect = (token: string) => {
-        const sseURL = 'http://localhost:8080/auth/connect';
+        const sseURL = 'http://localhost:10000/auth/connect';
 
         // 이미 연결이 존재하는 경우 연결을 닫습니다.
         if (eventSource) {
@@ -93,7 +97,7 @@ const App: React.FC<SseTestProps> = () => {
     const handleDisconnect = async () => {
       if (eventSource && accessToken) {
           try {
-              const response = await fetch('http://localhost:8080/auth/disconnect', {
+              const response = await fetch('http://localhost:10000/auth/disconnect', {
                   method: 'POST',
                   headers: {
                       'Authorization': accessToken
@@ -118,21 +122,54 @@ const App: React.FC<SseTestProps> = () => {
     };
 
     const handleMessage = async () => {
-        if (accessToken) {
-            const response = await fetch('http://localhost:8080/auth/msg', {
-                method: 'GET',
-                headers: {
-                    'Authorization': accessToken
-                }
-            });
-
-            if (response.status === 200) {
-                //console.log('msg request success');
-            } else {
-              console.error('Failed to get the message');
-              setMessage('Failed to get the message');
-            }
+      if (accessToken) {
+        const response = await fetch('http://localhost:10000/auth/msg', {
+          method: 'GET',
+          headers: {
+            'Authorization': accessToken
+          }
+        });
+    
+        if (response.status === 200) {
+          const alarmOutDTO: AlarmOutDTO = await response.json();
+          setAlarms([...alarms, alarmOutDTO]);
+        } else {
+          console.error('Failed to get the message');
+          setMessage('Failed to get the message');
         }
+      }
+    };
+
+    const handleLeaveApply = async () => {
+      if (accessToken) {
+        const leaveApplyEndpoint = 'http://localhost:10000/auth/leave/apply';
+        const leaveApplyData = {
+          type: leaveType,
+          startDate: startDate,
+          endDate: endDate,
+        };
+    
+        try {
+          const response = await fetch(leaveApplyEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': accessToken,
+            },
+            body: JSON.stringify(leaveApplyData),
+          });
+    
+          if (response.status === 200) {
+            console.log('Leave applied successfully');
+          } else {
+            throw new Error('Leave application failed');
+          }
+        } catch (error) {
+          const errorMessage = (error as Error).message;
+          console.error('Error:', errorMessage);
+          setMessage(`Error: ${errorMessage}`);
+        }
+      }
     };
 
     return (
@@ -153,13 +190,41 @@ const App: React.FC<SseTestProps> = () => {
           <button onClick={handleDisconnect} disabled={!eventSource}>Disconnect</button>
           <button onClick={handleMessage} disabled={!accessToken}>Message</button>
           <div>
-              {alarms.map((alarm, index) => (
-                  <p key={index} style={{ fontSize: '24px' }}>ID: {alarm.id}, Content: {alarm.content}</p>
-              ))}
-              <p style={{ fontSize: '24px' }}>{message}</p>
+            {alarms.map((alarm, index) => (
+              <pre key={index} style={{ fontSize: '24px' }}>
+                {JSON.stringify(alarm, null, 2)}
+              </pre>
+            ))}
+            <p style={{ fontSize: '24px' }}>{message}</p>
           </div>
+
+          <div>
+          <select value={leaveType} onChange={(e) => setLeaveType(e.target.value)}>
+            <option value="" disabled>Select Leave Type</option>
+            <option value="ANNUAL">Annual</option>
+            <option value="DUTY">Duty</option>
+          </select>
+
+          <input
+            type="date"
+            placeholder="Start Date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <input
+            type="date"
+            placeholder="End Date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+          <button onClick={handleLeaveApply} disabled={!accessToken}>Apply Leave</button>
+          </div>
+
       </div>
+      
     );
+
+    
 };
 
 export default App;
